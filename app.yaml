@@ -1,0 +1,11 @@
+runtime: python27
+api_version: 1
+threadsafe: yes
+
+handlers:
+- url: .*
+  script: download_image.app
+  login: required
+- url: /remoteapi.*
+  script: google.appengine.ext.remote_api.handler.application
+  login: admin

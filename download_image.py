@@ -1,5 +1,6 @@
 import os
 
+import pyodbc
 import requests
 
 from google.cloud import datastore
@@ -9,10 +10,11 @@ APP_ID = 'billionacts'
 client = datastore.Client()
 
 kind = 'NetworkMember'
+column = 'LogoKey'
+
 os.environ['APPLICATION_ID'] = APP_ID
 
 query = client.query(kind=kind)
-# query.add_filter('property', '=', 'val')
 query_iter = query.fetch(limit=15)
 
 headers = {
@@ -31,11 +33,23 @@ headers = {
 
 for entity in query_iter:
 
-    filename = entity['Name'] + '.png'
-    image_key = entity['LogoKey']
+    filename = '../images/{}/{}.png'.format(kind, entity['Name'])
+    image_key = entity[column]
 
     url = "https://console.cloud.google.com/m/blobstore/download?pid=billionacts&blob=" + image_key
 
     res = requests.get(url, headers=headers)
     with open(filename, 'w') as f:
         f.write(res.content)
+
+# cnxn = pyodbc.connect("Driver={SQL Server Native Client 11.0};"
+#                       "Server=oceanringtech.database.windows.net;"
+#                       "Database=BillionActs;"
+#                       "User ID=db_billionacts;Password=piecej@mf0und;"
+#                       "Trusted_Connection=yes;")
+# cursor = cnxn.cursor()
+
+# main(cursor)
+
+# cursor.close()
+# cnxn.close()

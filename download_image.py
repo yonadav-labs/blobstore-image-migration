@@ -6,16 +6,13 @@ import requests
 from google.cloud import datastore
 
 APP_ID = 'billionacts'
+KIND = 'NetworkMember'
+COLUMN = 'LogoKey'
 
 client = datastore.Client()
 
-kind = 'NetworkMember'
-column = 'LogoKey'
-
-os.environ['APPLICATION_ID'] = APP_ID
-
-query = client.query(kind=kind)
-query_iter = query.fetch(limit=15)
+query = client.query(kind=KIND)
+query_iter = query.fetch(limit=5)
 
 headers = {
     'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3',
@@ -31,25 +28,25 @@ headers = {
     'x-client-data': 'CJe2yQEIprbJAQjEtskBCKmdygEI4qjKAQjLrsoBCMqvygEIzrDKARjEscoB' 
 }
 
+cnxn = pyodbc.connect("Driver={ODBC Driver 17 for SQL Server};"
+                      "Server=oceanringtech.database.windows.net;"
+                      "Database=BillionActs;"
+                      "UID=db_billionacts;"
+                      "PWD=piecej@mf0und;")
+cursor = cnxn.cursor()
+
 for entity in query_iter:
 
-    filename = '../images/{}/{}.png'.format(kind, entity['Name'])
-    image_key = entity[column]
+    filename = '{}.png'.format(entity['Name'])
+    image_key = entity[COLUMN]
 
     url = "https://console.cloud.google.com/m/blobstore/download?pid=billionacts&blob=" + image_key
 
     res = requests.get(url, headers=headers)
-    with open(filename, 'w') as f:
-        f.write(res.content)
+    sql = '''INSERT INTO [dbo].[FirebaseImages]([ImageName],[Image],[Kind]) 
+             values (?, ?, ?)'''
+    cursor.execute(sql, (filename, pyodbc.Binary(res.content), KIND))
+    cursor.commit()
 
-# cnxn = pyodbc.connect("Driver={SQL Server Native Client 11.0};"
-#                       "Server=oceanringtech.database.windows.net;"
-#                       "Database=BillionActs;"
-#                       "User ID=db_billionacts;Password=piecej@mf0und;"
-#                       "Trusted_Connection=yes;")
-# cursor = cnxn.cursor()
-
-# main(cursor)
-
-# cursor.close()
-# cnxn.close()
+cursor.close()
+cnxn.close()
